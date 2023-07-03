@@ -13,6 +13,20 @@ export default {
     ],
     link: [
       { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
+    ],
+    script: [
+      {
+        src: 'https://cdn.jsdelivr.net/npm/@editorjs/editorjs@2.27.2',
+        // body: true,
+      },
+      {
+        src: 'https://cdn.jsdelivr.net/npm/@editorjs/header@2.7.0',
+        // body: true,
+      },
+      {
+        src: 'https://cdn.jsdelivr.net/npm/@editorjs/embed@latest',
+        // body: true,
+      }
     ]
   },
 
