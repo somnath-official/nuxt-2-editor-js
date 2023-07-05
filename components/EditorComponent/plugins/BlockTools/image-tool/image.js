@@ -1,4 +1,12 @@
 export default class Image {
+  constructor({data, api, config, readOnly, block}){
+    this.data = data
+    this.warpper = undefined
+  }
+
+  /**
+   * Creates a tool box icon with text for the block.
+   */
   static get toolbox() {
     return {
       title: 'Image',
@@ -6,6 +14,16 @@ export default class Image {
     };
   }
 
+  /**
+   * Make this block as read only supported
+   */
+  static get isReadOnlySupported() {
+    return true;
+  }
+
+  /**
+   * Configurations for paste event.
+   */
   static get pasteConfig() {
     return {
       tags: ['IMG'],
@@ -19,19 +37,38 @@ export default class Image {
     }
   }
 
-  static get isReadOnlySupported() {
-    return true;
+  /**
+   * Handles the editor paste event.
+   * @param {Object} event
+   */
+  onPaste(event){
+    switch (event.type){
+      case 'tag':
+        const imgTag = event.detail.data
+        this._createImage(imgTag.src)
+        break
+      case 'file':
+        /* We need to read file here as base64 string */
+        const file = event.detail.file
+        const reader = new FileReader()
+        reader.onload = (loadEvent) => this._createImage(loadEvent.target.result)
+        reader.readAsDataURL(file)
+        break
+      case 'pattern':
+        const src = event.detail.data
+        this._createImage(src)
+        break
+    }
   }
 
-  constructor({data, api, config, readOnly, block}){
-    this.data = data
-    this.warpper = undefined
-  }
-
+  /**
+   * Creates the wrapper element for image.
+   * @returns {Element}
+   */
   render(){
     if (this.data && this.data.url) {
       const html = `<div></div>`
-      this.warpper = new DOMParser().parseFromString(html, "text/html").body.firstElementChild;
+      this.warpper = this._generateDomElementFromHtmlString(html);
       this._createImage(this.data.url)
     }
     else {
@@ -47,60 +84,62 @@ export default class Image {
         />
       </div>
       `
-      this.warpper = new DOMParser().parseFromString(html, "text/html").body.firstElementChild;
+      this.warpper = this._generateDomElementFromHtmlString(html);
       this.warpper.addEventListener('click', (event) => {
         this.warpper.querySelector(`input[type="file"]`).click()
       })
       this.warpper.querySelector(`input[type="file"]`).addEventListener('change', (event) => {
+        // Image upload API
         this._getBase64Data(event.target.files[0])
       })
     }
     return this.warpper;
   }
 
-  onPaste(event){
-    switch (event.type){
-      case 'tag':
-        const imgTag = event.detail.data
-        this._createImage(imgTag.src)
-        break
-      case 'file':
-        /* We need to read file here as base64 string */
-        const file = event.detail.file
-        const reader = new FileReader()
-        reader.onload = (loadEvent) => {
-          this._createImage(loadEvent.target.result)
-        }
-        reader.readAsDataURL(file)
-        break
-      case 'pattern':
-        const src = event.detail.data
-        this._createImage(src)
-        break
-    }
-  }
-
+  /**
+   * Handles save fumctionality.
+   * @param {Element} blockContent
+   * @returns {Object}
+   */
   save(blockContent){
     return {
       url: blockContent.querySelector('img') ? blockContent.querySelector('img').src : ''
     }
   }
 
+  /**
+   *
+   * @param {Object} savedData
+   * @returns {Boolean}
+   */
   validate(savedData){
-    if (!savedData.url.trim()){
-      return false;
-    }
-
-    return true;
+    return !savedData.url.trim() ? false : true
   }
 
+  /**
+   * Creates an image element and append it to the editor block.
+   * @param {string} url
+   */
   _createImage(url) {
     const image = document.createElement('img')
+    const imageWrapper = document.createElement('div')
     image.style.width="100%"
     image.src = url
+    imageWrapper.classList.add('editor-image-wrapper')
+    imageWrapper.style="width: 100%;"
     this.warpper.innerHTML = ''
-    this.warpper.style = 'margin: 8px 0px;'
-    this.warpper.appendChild(image)
+    this.warpper.style = 'margin: 8px 0px; display: flex;'
+    imageWrapper.appendChild(image)
+    this.warpper.appendChild(imageWrapper)
+  }
+
+  /**
+   * Generates dom element form the given HTML string.
+   * @param {string} html
+   * @returns {Element}
+   */
+  _generateDomElementFromHtmlString(html) {
+    return new DOMParser().parseFromString(html, "text/html").body.firstElementChild
   }
 
   async _getBase64Data(file) {
