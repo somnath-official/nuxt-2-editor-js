@@ -1,27 +1,29 @@
 <template>
   <div>
-    <editor-component
-      name="test"
-      placeholder="Hello Editor JS..."
-      @onReady="onEditorReady"
-      @onChange="onEditorStateChange"
-    />
-    <!-- <editor-component name="test2"/> -->
+    <header-component />
+    <main class="container mt-4">
+      <editor-component
+        name="test"
+        :readOnly="false"
+        placeholder="Hello Editor JS..."
+        @onReady="onEditorReady"
+        @onChange="onEditorStateChange"
+        @onSaveSuccess="onSaveSuccess"
+      />
+    </main>
   </div>
 </template>
 
 <script>
-import EditorComponent from '../components/EditorComponent.vue'
+import EditorComponent from '../components/EditorComponent'
+import HeaderComponent from '../components/HeaderComponent'
 export default {
-  components: { EditorComponent },
+  components: { EditorComponent, HeaderComponent },
   name: 'IndexPage',
   methods: {
-    onEditorReady() {
-      // console.log('Editor is ready')
-    },
-    onEditorStateChange(newState) {
-      // console.log(newState.details)
-    }
+    onEditorReady() {},
+    onEditorStateChange(newState) {},
+    onSaveSuccess(data) {console.log(JSON.stringify(data))}
   }
 }
 </script>
