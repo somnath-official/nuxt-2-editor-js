@@ -1,7 +1,57 @@
 export default class Image {
   constructor({data, api, config, readOnly, block}){
-    this.data = data
+    this.api = api
+    this.config = config
+    this.data = {
+      url: data.url || '',
+      height: data.height || config.height ? config.height : '100%',
+      width: data.width || config.width ? config.width : '100%',
+      position: data.position || config.position ? config.position : 'center', // start|center|end
+    };
     this.warpper = undefined
+    this.isImageCreated = false
+    this.settings = [
+      {
+        name: 'height',
+        icon: `<div style="display: flex; justify-content: center; align-items: center; padding: 0px 4px;">
+                  <label style="font-size: 15px;font-style: inherit;width: 60px;">Height</label>
+                  <input
+                    type="text"
+                    value="${this.data.height}"
+                    title="height"
+                    style="width: 113px;margin-left: 4px;border: none;outline: none;font-size: 15px;padding: 0px 8px;"
+                    placeholder="In px or in %"
+                  >
+                </div>
+              `
+      },
+      {
+        name: 'width',
+        icon: `<div style="display: flex; justify-content: center; align-items: center; padding: 0px 4px;">
+                  <label style="font-size: 15px;font-style: inherit;width: 60px;">Width</label>
+                  <input
+                    type="text"
+                    value="${this.data.width}"
+                    title="height"
+                    style="width: 113px;margin-left: 4px;border: none;outline: none;font-size: 15px;padding: 0px 8px;"
+                    placeholder="In px or in %"
+                  >
+                </div>
+              `
+      },
+      {
+        name: 'position',
+        icon: `<div style="display: flex;align-items: center;padding: 0px 4px;cursor:default;">
+                <span style="width: 60px;">Align</span>
+                <div class="image-alignment-container" style="width: 113px;display: flex;justify-content: space-around;align-items: center;">
+                  <i class="fa fa-align-left" data-align="start"></i>
+                  <i class="fa fa-align-center" data-align="center"></i>
+                  <i class="fa fa-align-right" data-align="end"></i>
+                </div>
+              </div>
+              `
+      }
+    ]
   }
 
   /**
@@ -86,7 +136,8 @@ export default class Image {
       `
       this.warpper = this._generateDomElementFromHtmlString(html);
       this.warpper.addEventListener('click', (event) => {
-        this.warpper.querySelector(`input[type="file"]`).click()
+        if(this.warpper.querySelector(`input[type="file"]`))
+          this.warpper.querySelector(`input[type="file"]`).click()
       })
       this.warpper.querySelector(`input[type="file"]`).addEventListener('change', (event) => {
         // Image upload API
@@ -97,14 +148,79 @@ export default class Image {
   }
 
   /**
+   * Handles block tool settings
+   * @returns {Element}
+   */
+  renderSettings(){
+    const wrapper = document.createElement('div');
+    if (this.isImageCreated) {
+      this.settings.forEach( tune => {
+        let button = document.createElement('div');
+
+        button.classList.add('cdx-settings-button');
+        button.innerHTML = tune.icon;
+        wrapper.appendChild(button);
+
+        switch(tune.name) {
+          case 'height':
+            const inputHeight = button.querySelector(`input[type="text"]`)
+            inputHeight.value = this.data.height
+            inputHeight.addEventListener('input', (event) => {
+              const value = event.target.value
+              if (value && value.match(/\%|px$/g)) {
+                this.data.height = value
+                this._alterImageDimentions('height', value)
+              }
+            })
+            break
+          case 'width':
+            const inputWidth = button.querySelector(`input[type="text"]`)
+            inputWidth.value = this.data.width
+            inputWidth.addEventListener('input', (event) => {
+              const value = event.target.value
+              if (value && value.match(/\%|px$/g)) {
+                this.data.width = value
+                this._alterImageDimentions('width', value)
+              }
+            })
+            break
+          case 'position':
+            const inputAlignmentElements = button.querySelectorAll('.image-alignment-container i')
+            inputAlignmentElements.forEach(ele => {
+              const dataAlign = ele.getAttribute('data-align')
+              ele.style = this._getImageAlignmentClass(dataAlign)
+              if (this.data.position === dataAlign) ele.classList.add('active')
+
+              ele.addEventListener('click', (event) => {
+                this.data.position = event.target.getAttribute('data-align')
+                this._setImageWrapperStyle()
+                const actveAlignmentButton = button.querySelector('.image-alignment-container i.active')
+                actveAlignmentButton.classList.remove('active')
+                actveAlignmentButton.style = this._getImageAlignmentClass(actveAlignmentButton.getAttribute('data-align'))
+                ele.classList.add('active')
+                ele.style = this._getImageAlignmentClass(event.target.getAttribute('data-align'))
+              })
+            })
+            break
+          default:
+            button.addEventListener('click', () => {
+              button.classList.toggle('cdx-settings-button--active');
+            })
+        }
+      });
+    }
+    return wrapper;
+  }
+
+  /**
    * Handles save fumctionality.
    * @param {Element} blockContent
    * @returns {Object}
    */
   save(blockContent){
-    return {
+    return Object.assign(this.data, {
       url: blockContent.querySelector('img') ? blockContent.querySelector('img').src : ''
-    }
+    })
   }
 
   /**
@@ -121,16 +237,14 @@ export default class Image {
    * @param {string} url
    */
   _createImage(url) {
+    this._toggleIsImageAdded()
     const image = document.createElement('img')
-    const imageWrapper = document.createElement('div')
-    image.style.width="100%"
+    image.style.width = this.data.width
+    image.style.height = this.data.height
     image.src = url
-    imageWrapper.classList.add('editor-image-wrapper')
-    imageWrapper.style="width: 100%;"
     this.warpper.innerHTML = ''
-    this.warpper.style = 'margin: 8px 0px; display: flex;'
-    imageWrapper.appendChild(image)
-    this.warpper.appendChild(imageWrapper)
+    this._setImageWrapperStyle()
+    this.warpper.appendChild(image)
   }
 
   /**
@@ -151,5 +265,44 @@ export default class Image {
     reader.onerror = function (error) {
       console.log('Error: ', error);
     };
+  }
+
+  /**
+   * Toggles image added status
+   */
+  _toggleIsImageAdded() {
+    this.isImageCreated = true
+  }
+
+  /**
+   * Updates the image dimentions.
+   * @param {string} property - height, width
+   * @param {string} value
+   */
+  _alterImageDimentions(property, value) {
+    const image = this.warpper.querySelector('img')
+    switch(property) {
+      case 'height':
+        image.style.height = value
+        break
+      case 'width':
+        image.style.width = value
+        break
+    }
+  }
+
+  /**
+   * Returns image alignment class.
+   */
+  _getImageAlignmentClass(position) {
+    if (this.data.position === position) return "cursor:pointer;color: black;"
+    return "cursor:pointer;color: #9d9d9d;"
+  }
+
+  /**
+   * Set image wrapper style
+   */
+  _setImageWrapperStyle() {
+    this.warpper.style = 'margin: 8px 0px; display: flex; justify-content: ' + this.data.position
   }
 }
