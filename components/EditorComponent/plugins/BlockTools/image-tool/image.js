@@ -1,6 +1,5 @@
 export default class Image {
   constructor({data, api, config, readOnly, block}){
-    // console.log(data)
     this.api = api
     this.config = config
     this.data = {
@@ -9,7 +8,6 @@ export default class Image {
       width: data.width ? data.width : ( config.width ? config.width : '100%' ),
       position: data.position ? data.position : ( config.position ? config.position : 'center' ), // start|center|end
     };
-    console.log(this.data)
     this.warpper = undefined
     this.isImageCreated = false
     this.settings = [

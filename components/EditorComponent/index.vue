@@ -14,6 +14,8 @@
 
 <script>
 import Image from './plugins/BlockTools/image-tool/image'
+import LineBreak from './plugins/BlockTools/line-break-tool/lineBreak'
+
 export default {
   name: 'EditorJs',
   props: {
@@ -50,6 +52,9 @@ export default {
       tools: {
         image: {
           class: Image,
+        },
+        lineBreak: {
+          class: LineBreak
         },
         header: {
           class: Header,
